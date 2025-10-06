@@ -14,7 +14,7 @@ function IncidenciasView() {
     estado: "abierta",
     asignado_a: "",
     entidad_originadora: "",
-    impacto: "",
+    impacto: "medio",
     etapa: "",
     especialidad: ""
   });
@@ -46,7 +46,6 @@ function IncidenciasView() {
       .then(nuevaIncidencia => {
         setIncidencias([...incidencias, nuevaIncidencia]);
         cerrarModal();
-        alert("Incidencia creada exitosamente");
       })
       .catch(error => console.log("Error:", error));
   };
@@ -69,7 +68,6 @@ function IncidenciasView() {
           inc.id === incidenciaActualizada.id ? incidenciaActualizada : inc
         ));
         cerrarModal();
-        alert("Incidencia actualizada exitosamente");
       })
       .catch(error => console.log("Error:", error));
   };
@@ -87,7 +85,6 @@ function IncidenciasView() {
       .then(response => response.json())
       .then(() => {
         setIncidencias(incidencias.filter(inc => inc.id !== idIncidencia));
-        alert("Incidencia eliminada exitosamente");
       })
       .catch(error => console.log("Error:", error));
   };
@@ -101,7 +98,7 @@ function IncidenciasView() {
       estado: "abierta",
       asignado_a: "",
       entidad_originadora: "",
-      impacto: "",
+      impacto: "medio",
       etapa: "",
       especialidad: ""
     });
@@ -141,11 +138,10 @@ function IncidenciasView() {
       <div className="header">
         <h1>Sistema de Gestión de Incidencias</h1>
         <button className="btn-crear" onClick={abrirModalCrear}>
-          + Crear Incidencia
+          Crear Incidencia
         </button>
       </div>
 
-      {/* TABLA DE INCIDENCIAS */}
       <div className="tabla-container">
         <table>
           <thead>
@@ -198,7 +194,6 @@ function IncidenciasView() {
         </table>
       </div>
 
-      {/* MODAL FORMULARIO */}
       {mostrarModal && (
         <div className="modal-overlay" onClick={cerrarModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -265,12 +260,11 @@ function IncidenciasView() {
 
               <label>
                 Impacto:
-                <input
-                  type="text"
-                  name="impacto"
-                  value={formulario.impacto}
-                  onChange={manejarCambio}
-                />
+                <select name="impacto" value={formulario.impacto} onChange={manejarCambio}>
+                  <option value="bajo">Bajo</option>
+                  <option value="medio">Medio</option>
+                  <option value="alto">Alto</option>
+                </select>
               </label>
 
               <label>
