@@ -7,6 +7,7 @@ function Menu() {
         <li>Informes</li>
         <li>Configuración</li>
         <li>Borrador</li>
+        <li>ahora si soy yo</li>
       </ul>
     </nav>
   );
