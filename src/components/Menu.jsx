@@ -1,13 +1,47 @@
-function Menu() {
+import { useState } from 'react';
+import '../styles/Menu.css';
+
+function Menu({ activeSection, onSectionChange }) {
+  const menuItems = [
+    { id: 'inicio', icon: '🏠', label: 'Inicio' },
+    { id: 'planos', icon: '📐', label: 'Planos' },
+    { id: 'archivos', icon: '📄', label: 'Archivos' },
+    { id: 'especificaciones', icon: '📋', label: 'Especificaciones' },
+    { id: 'incidencias', icon: '✅', label: 'Incidencias' },
+    { id: 'formularios', icon: '📝', label: 'Formularios' },
+    { id: 'fotos', icon: '📷', label: 'Fotos' },
+    { id: 'sdi', icon: '💬', label: 'SDI' },
+    { id: 'remisiones', icon: '👤', label: 'Remisiones' },
+    { id: 'reuniones', icon: '👥', label: 'Reuniones' },
+    { id: 'correspondencia', icon: '✉️', label: 'Correspondencia' },
+    { id: 'planificacion', icon: '📊', label: 'Planificación' },
+    { id: 'activos', icon: '🔧', label: 'Activos' },
+    { id: 'informes', icon: '📈', label: 'Informes' }
+  ];
+
   return (
     <nav className="menu-lateral">
-      <h2>Menú</h2>
-      <ul>
-        <li>Incidencias</li>
-        <li>Informes</li>
-        <li>Configuración</li>
-        <li>Borrador</li>
-        <li>ahora si soy yo</li>
+      {/* Header */}
+      <div className="menu-header">
+        <div className="logo">
+          <span className="logo-icon">🔨</span>
+          <h2>Build</h2>
+        </div>
+      </div>
+
+      {/* Lista de navegación */}
+      <ul className="menu-list">
+        {menuItems.map((item) => (
+          <li key={item.id}>
+            <button
+              className={`menu-item ${activeSection === item.id ? 'active' : ''}`}
+              onClick={() => onSectionChange(item.id)}
+            >
+              <span className="menu-icon">{item.icon}</span>
+              <span className="menu-label">{item.label}</span>
+            </button>
+          </li>
+        ))}
       </ul>
     </nav>
   );
