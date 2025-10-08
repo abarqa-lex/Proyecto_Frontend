@@ -5,7 +5,9 @@ function IncidenciasView() {
   const API_URL = "https://68afa171b91dfcdd62bcb747.mockapi.io/TL/incidencias";
   
   const [incidencias, setIncidencias] = useState([]);
-  const [mostrarModal, setMostrarModal] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
+  const [modoEdicion, setModoEdicion] = useState(false);
   const [incidenciaEditando, setIncidenciaEditando] = useState(null);
   const [formulario, setFormulario] = useState({
     titulo: "",
@@ -24,52 +26,76 @@ function IncidenciasView() {
   }, []);
 
   const obtenerIncidencias = () => {
+    setCargando(true);
+    setError(null);
+    
     fetch(API_URL)
       .then(response => response.json())
       .then(datos => {
         setIncidencias(datos);
+        setCargando(false);
       })
-      .catch(error => console.log("Error:", error));
+      .catch(error => {
+        console.log("Error:", error);
+        setError("No se pudieron cargar las incidencias");
+        setCargando(false);
+      });
   };
 
-  const crearIncidencia = (e) => {
+  const manejarSubmit = (e) => {
     e.preventDefault();
     
-    fetch(API_URL, {
+    if (modoEdicion) {
+      actualizarIncidencia();
+    } else {
+      crearIncidencia();
+    }
+  };
+
+  const crearIncidencia = () => {
+    const configuracion = {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(formulario)
-    })
+    };
+    
+    fetch(API_URL, configuracion)
       .then(response => response.json())
       .then(nuevaIncidencia => {
         setIncidencias([...incidencias, nuevaIncidencia]);
-        cerrarModal();
+        limpiarFormulario();
       })
-      .catch(error => console.log("Error:", error));
+      .catch(error => {
+        console.log("Error:", error);
+        setError("Error al crear incidencia");
+      });
   };
 
-  const actualizarIncidencia = (e) => {
-    e.preventDefault();
-    
+  const actualizarIncidencia = () => {
     const urlEspecifica = `${API_URL}/${incidenciaEditando.id}`;
     
-    fetch(urlEspecifica, {
+    const configuracion = {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(formulario)
-    })
+    };
+    
+    fetch(urlEspecifica, configuracion)
       .then(response => response.json())
       .then(incidenciaActualizada => {
         setIncidencias(incidencias.map(inc => 
           inc.id === incidenciaActualizada.id ? incidenciaActualizada : inc
         ));
-        cerrarModal();
+        limpiarFormulario();
       })
-      .catch(error => console.log("Error:", error));
+      .catch(error => {
+        console.log("Error:", error);
+        setError("Error al actualizar incidencia");
+      });
   };
 
   const eliminarIncidencia = (idIncidencia) => {
@@ -79,33 +105,23 @@ function IncidenciasView() {
     
     const urlEspecifica = `${API_URL}/${idIncidencia}`;
     
-    fetch(urlEspecifica, {
+    const configuracion = {
       method: "DELETE"
-    })
+    };
+    
+    fetch(urlEspecifica, configuracion)
       .then(response => response.json())
       .then(() => {
         setIncidencias(incidencias.filter(inc => inc.id !== idIncidencia));
       })
-      .catch(error => console.log("Error:", error));
+      .catch(error => {
+        console.log("Error:", error);
+        setError("Error al eliminar incidencia");
+      });
   };
 
-  const abrirModalCrear = () => {
-    setIncidenciaEditando(null);
-    setFormulario({
-      titulo: "",
-      descripcion: "",
-      prioridad: "media",
-      estado: "abierta",
-      asignado_a: "",
-      entidad_originadora: "",
-      impacto: "medio",
-      etapa: "",
-      especialidad: ""
-    });
-    setMostrarModal(true);
-  };
-
-  const abrirModalEditar = (incidencia) => {
+  const prepararEdicion = (incidencia) => {
+    setModoEdicion(true);
     setIncidenciaEditando(incidencia);
     setFormulario({
       titulo: incidencia.titulo,
@@ -118,12 +134,24 @@ function IncidenciasView() {
       etapa: incidencia.etapa,
       especialidad: incidencia.especialidad
     });
-    setMostrarModal(true);
+    window.scrollTo(0, 0);
   };
 
-  const cerrarModal = () => {
-    setMostrarModal(false);
+  const limpiarFormulario = () => {
+    setFormulario({
+      titulo: "",
+      descripcion: "",
+      prioridad: "media",
+      estado: "abierta",
+      asignado_a: "",
+      entidad_originadora: "",
+      impacto: "medio",
+      etapa: "",
+      especialidad: ""
+    });
+    setModoEdicion(false);
     setIncidenciaEditando(null);
+    setError(null);
   };
 
   const manejarCambio = (e) => {
@@ -133,170 +161,197 @@ function IncidenciasView() {
     });
   };
 
+  if (cargando) {
+    return (
+      <div className="App">
+        <div className="mensaje-estado">Cargando incidencias...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="App">
-      <div className="header">
-        <h1>Sistema de Gestión de Incidencias</h1>
-        <button className="btn-crear" onClick={abrirModalCrear}>
-          Crear Incidencia
-        </button>
-      </div>
+      <h1>Sistema de Gestión de Incidencias</h1>
 
-      <div className="tabla-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Título</th>
-              <th>Descripción</th>
-              <th>Prioridad</th>
-              <th>Estado</th>
-              <th>Asignado a</th>
-              <th>Entidad</th>
-              <th>Impacto</th>
-              <th>Etapa</th>
-              <th>Especialidad</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incidencias.map(incidencia => (
-              <tr key={incidencia.id}>
-                <td>{incidencia.id}</td>
-                <td>{incidencia.titulo}</td>
-                <td>{incidencia.descripcion}</td>
-                <td>{incidencia.prioridad}</td>
-                <td>{incidencia.estado}</td>
-                <td>{incidencia.asignado_a}</td>
-                <td>{incidencia.entidad_originadora}</td>
-                <td>{incidencia.impacto}</td>
-                <td>{incidencia.etapa}</td>
-                <td>{incidencia.especialidad}</td>
-                <td className="acciones">
-                  <button 
-                    className="btn-editar" 
-                    onClick={() => abrirModalEditar(incidencia)}
-                    title="Editar"
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    className="btn-eliminar" 
-                    onClick={() => eliminarIncidencia(incidencia.id)}
-                    title="Eliminar"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {error && <div className="mensaje-error">{error}</div>}
 
-      {mostrarModal && (
-        <div className="modal-overlay" onClick={cerrarModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{incidenciaEditando ? "Editar Incidencia" : "Nueva Incidencia"}</h2>
-            <form onSubmit={incidenciaEditando ? actualizarIncidencia : crearIncidencia}>
-              <label>
-                Título:
-                <input
-                  type="text"
-                  name="titulo"
-                  value={formulario.titulo}
-                  onChange={manejarCambio}
-                  required
-                />
-              </label>
+      {/* FORMULARIO */}
+      <div className="formulario-container">
+        <h2>{modoEdicion ? "Editar Incidencia" : "Crear Nueva Incidencia"}</h2>
+        <form onSubmit={manejarSubmit}>
+          <div className="form-row">
+            <label>
+              Título: *
+              <input
+                type="text"
+                name="titulo"
+                value={formulario.titulo}
+                onChange={manejarCambio}
+                required
+                placeholder="Ingrese el título"
+              />
+            </label>
 
-              <label>
-                Descripción:
-                <textarea
-                  name="descripcion"
-                  value={formulario.descripcion}
-                  onChange={manejarCambio}
-                  required
-                />
-              </label>
-
-              <label>
-                Prioridad:
-                <select name="prioridad" value={formulario.prioridad} onChange={manejarCambio}>
-                  <option value="baja">Baja</option>
-                  <option value="media">Media</option>
-                  <option value="alta">Alta</option>
-                </select>
-              </label>
-
-              <label>
-                Estado:
-                <select name="estado" value={formulario.estado} onChange={manejarCambio}>
-                  <option value="abierta">Abierta</option>
-                  <option value="en proceso">En Proceso</option>
-                  <option value="cerrada">Cerrada</option>
-                </select>
-              </label>
-
-              <label>
-                Asignado a:
-                <input
-                  type="text"
-                  name="asignado_a"
-                  value={formulario.asignado_a}
-                  onChange={manejarCambio}
-                />
-              </label>
-
-              <label>
-                Entidad Originadora:
-                <input
-                  type="text"
-                  name="entidad_originadora"
-                  value={formulario.entidad_originadora}
-                  onChange={manejarCambio}
-                />
-              </label>
-
-              <label>
-                Impacto:
-                <select name="impacto" value={formulario.impacto} onChange={manejarCambio}>
-                  <option value="bajo">Bajo</option>
-                  <option value="medio">Medio</option>
-                  <option value="alto">Alto</option>
-                </select>
-              </label>
-
-              <label>
-                Etapa:
-                <input
-                  type="text"
-                  name="etapa"
-                  value={formulario.etapa}
-                  onChange={manejarCambio}
-                />
-              </label>
-
-              <label>
-                Especialidad:
-                <input
-                  type="text"
-                  name="especialidad"
-                  value={formulario.especialidad}
-                  onChange={manejarCambio}
-                />
-              </label>
-
-              <div className="modal-botones">
-                <button type="submit" className="btn-guardar">
-                  {incidenciaEditando ? "Actualizar" : "Crear"}
-                </button>
-                <button type="button" className="btn-cancelar" onClick={cerrarModal}>
-                  Cancelar
-                </button>
-              </div>
-            </form>
+            <label>
+              Prioridad: *
+              <select name="prioridad" value={formulario.prioridad} onChange={manejarCambio} required>
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+              </select>
+            </label>
           </div>
+
+          <label>
+            Descripción: *
+            <textarea
+              name="descripcion"
+              value={formulario.descripcion}
+              onChange={manejarCambio}
+              required
+              placeholder="Ingrese la descripción"
+            />
+          </label>
+
+          <div className="form-row">
+            <label>
+              Estado: *
+              <select name="estado" value={formulario.estado} onChange={manejarCambio} required>
+                <option value="abierta">Abierta</option>
+                <option value="en proceso">En Proceso</option>
+                <option value="cerrada">Cerrada</option>
+              </select>
+            </label>
+
+            <label>
+              Impacto: *
+              <select name="impacto" value={formulario.impacto} onChange={manejarCambio} required>
+                <option value="bajo">Bajo</option>
+                <option value="medio">Medio</option>
+                <option value="alto">Alto</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="form-row">
+            <label>
+              Asignado a:
+              <input
+                type="text"
+                name="asignado_a"
+                value={formulario.asignado_a}
+                onChange={manejarCambio}
+                placeholder="Nombre del responsable"
+              />
+            </label>
+
+            <label>
+              Entidad Originadora:
+              <input
+                type="text"
+                name="entidad_originadora"
+                value={formulario.entidad_originadora}
+                onChange={manejarCambio}
+                placeholder="Entidad"
+              />
+            </label>
+          </div>
+
+          <div className="form-row">
+            <label>
+              Etapa:
+              <input
+                type="text"
+                name="etapa"
+                value={formulario.etapa}
+                onChange={manejarCambio}
+                placeholder="Etapa del proyecto"
+              />
+            </label>
+
+            <label>
+              Especialidad:
+              <input
+                type="text"
+                name="especialidad"
+                value={formulario.especialidad}
+                onChange={manejarCambio}
+                placeholder="Especialidad técnica"
+              />
+            </label>
+          </div>
+
+          <div className="form-botones">
+            <button type="submit" className="btn-guardar">
+              {modoEdicion ? "Actualizar Incidencia" : "Crear Incidencia"}
+            </button>
+            {modoEdicion && (
+              <button type="button" className="btn-cancelar" onClick={limpiarFormulario}>
+                Cancelar Edición
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* LISTA DE INCIDENCIAS */}
+      <h2>Lista de Incidencias ({incidencias.length})</h2>
+
+      {incidencias.length === 0 ? (
+        <div className="mensaje-vacio">
+          <p>No hay incidencias registradas</p>
+        </div>
+      ) : (
+        <div className="tabla-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Asignado a</th>
+                <th>Entidad</th>
+                <th>Impacto</th>
+                <th>Etapa</th>
+                <th>Especialidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {incidencias.map(incidencia => (
+                <tr key={incidencia.id}>
+                  <td>{incidencia.id}</td>
+                  <td>{incidencia.titulo}</td>
+                  <td>{incidencia.descripcion}</td>
+                  <td>{incidencia.prioridad}</td>
+                  <td>{incidencia.estado}</td>
+                  <td>{incidencia.asignado_a}</td>
+                  <td>{incidencia.entidad_originadora}</td>
+                  <td>{incidencia.impacto}</td>
+                  <td>{incidencia.etapa}</td>
+                  <td>{incidencia.especialidad}</td>
+                  <td className="acciones">
+                    <button 
+                      className="btn-editar" 
+                      onClick={() => prepararEdicion(incidencia)}
+                      title="Editar"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      className="btn-eliminar" 
+                      onClick={() => eliminarIncidencia(incidencia.id)}
+                      title="Eliminar"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
