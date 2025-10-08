@@ -16,7 +16,7 @@ function Menu({ activeSection, onSectionChange }) {
     { id: 'correspondencia', icon: '✉️', label: 'Correspondencia' },
     { id: 'planificacion', icon: '📊', label: 'Planificación' },
     { id: 'activos', icon: '🔧', label: 'Activos' },
-    { id: 'informes', icon: '📈', label: 'Informes' }
+    
   ];
 
   return (
